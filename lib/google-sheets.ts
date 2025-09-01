@@ -18,6 +18,7 @@ const sheets = google.sheets({ version: 'v4', auth });
 // Định nghĩa cấu trúc bảng
 export const SHEET_NAMES = {
   TAI_LIEU: 'tai_lieu',
+  TAI_LIEU_CON: 'tai_lieu_con',
   PHIEN_BAN: 'phien_ban',
   LICH_SU: 'lich_su',
   FILE_DINH_KEM: 'file_dinh_kem',
@@ -30,6 +31,11 @@ export const COLUMNS = {
     'id', 'ten_tai_lieu', 'mo_ta', 'loai_tai_lieu', 'trang_thai',
     'nguoi_tao', 'ngay_tao', 'nguoi_cap_nhat', 'ngay_cap_nhat',
     'phien_ban_hien_tai', 'tieu_chuan_ap_dung', 'url_file'
+  ],
+  TAI_LIEU_CON: [
+    'id', 'tai_lieu_cha_id', 'ten_tai_lieu_con', 'mo_ta', 'loai_tai_lieu',
+    'trang_thai', 'thu_tu', 'nguoi_tao', 'ngay_tao', 'nguoi_cap_nhat', 
+    'ngay_cap_nhat', 'url_file', 'ghi_chu'
   ],
   PHIEN_BAN: [
     'id', 'tai_lieu_id', 'so_phien_ban', 'noi_dung', 'ghi_chu',

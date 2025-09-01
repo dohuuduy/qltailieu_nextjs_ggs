@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { MultiSelect } from '@/components/ui/multi-select'
-import { Plus, Edit, History, Trash2 } from 'lucide-react'
+import SubDocumentManager from '@/components/SubDocumentManager'
+import { Plus, Edit, History, Trash2, FileText } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 
 interface TaiLieu {
@@ -47,6 +48,7 @@ export default function DocumentManager() {
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false)
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isSubDocumentDialogOpen, setIsSubDocumentDialogOpen] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<TaiLieu | null>(null)
 
   // Form states
@@ -602,6 +604,18 @@ export default function DocumentManager() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => {
+                          setSelectedTaiLieu(taiLieu)
+                          setIsSubDocumentDialogOpen(true)
+                        }}
+                        title="Quản lý tài liệu con"
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleDeleteDocument(taiLieu)}
                         title="Xóa tài liệu"
                         className="text-red-600 hover:text-red-800"
@@ -798,6 +812,21 @@ export default function DocumentManager() {
                 </TableBody>
               </Table>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog quản lý tài liệu con */}
+      <Dialog open={isSubDocumentDialogOpen} onOpenChange={setIsSubDocumentDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Quản Lý Tài Liệu Con</DialogTitle>
+          </DialogHeader>
+          {selectedTaiLieu && (
+            <SubDocumentManager 
+              documentId={selectedTaiLieu.id}
+              documentName={selectedTaiLieu.ten_tai_lieu}
+            />
           )}
         </DialogContent>
       </Dialog>
