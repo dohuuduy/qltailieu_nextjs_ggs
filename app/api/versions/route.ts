@@ -14,13 +14,15 @@ export async function GET(request: NextRequest) {
     }
 
     const headers = data[0]
-    let versions = data.slice(1).map(row => {
-      const version: any = {}
-      headers.forEach((header: string, index: number) => {
-        version[header] = row[index] || ''
+    let versions = data.slice(1)
+      .map(row => {
+        const version: any = {}
+        headers.forEach((header: string, index: number) => {
+          version[header] = row[index] || ''
+        })
+        return version
       })
-      return version
-    })
+      .filter((v: any) => v.trang_thai !== 'da_xoa') // Lọc bỏ phiên bản đã xóa
 
     // Lọc theo tài liệu nếu có
     if (taiLieuId) {

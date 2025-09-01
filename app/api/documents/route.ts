@@ -12,13 +12,15 @@ export async function GET() {
 
     // Chuyển đổi dữ liệu từ array sang object
     const headers = data[0]
-    const documents = data.slice(1).map(row => {
-      const doc: any = {}
-      headers.forEach((header: string, index: number) => {
-        doc[header] = row[index] || ''
+    const documents = data.slice(1)
+      .map(row => {
+        const doc: any = {}
+        headers.forEach((header: string, index: number) => {
+          doc[header] = row[index] || ''
+        })
+        return doc
       })
-      return doc
-    })
+      .filter(doc => doc.trang_thai !== 'da_xoa') // Lọc bỏ tài liệu đã xóa
 
     return NextResponse.json(documents)
   } catch (error) {
@@ -51,7 +53,8 @@ export async function POST(request: NextRequest) {
       body.nguoi_tao || 'Hệ thống',
       currentDate,
       '1.0', // phiên bản đầu tiên
-      body.tieu_chuan_ap_dung
+      body.tieu_chuan_ap_dung,
+      body.url_file || '' // URL file
     ]
 
     await writeSheet(SHEET_NAMES.TAI_LIEU, [newRow])
