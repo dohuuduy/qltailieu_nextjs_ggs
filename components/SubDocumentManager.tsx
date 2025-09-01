@@ -9,8 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { Plus, Edit, Trash2, GripVertical, FileText, ExternalLink } from 'lucide-react'
+import { Plus, Edit, Trash2, GripVertical, FileText, ExternalLink, Sparkles } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
+import TemplateSelector from '@/components/TemplateSelector'
+import BulkOperations from '@/components/BulkOperations'
+import { type SubDocumentTemplate } from '@/lib/sub-document-templates'
 
 interface TaiLieuCon {
   id: string
@@ -41,6 +44,8 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedSubDocument, setSelectedSubDocument] = useState<TaiLieuCon | null>(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false)
 
   // Form states
   const [formData, setFormData] = useState({
@@ -91,6 +96,64 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
     fetchSubDocuments()
   }, [documentId])
 
+  // Template handlers
+  const handleTemplateSelect = (template: SubDocumentTemplate, customName?: string) => {
+    if (!template.id) {
+      // Manual creation
+      setShowTemplateSelector(false)
+      setIsCreateDialogOpen(true)
+      return
+    }
+
+    const templateName = customName 
+      ? template.ten_mau.replace(/\[.*?\]/g, customName)
+      : template.ten_mau
+
+    setFormData({
+      ten_tai_lieu_con: templateName,
+      mo_ta: template.mo_ta_mau,
+      loai_tai_lieu: template.loai_tai_lieu,
+      url_file: template.url_mau || '',
+      ghi_chu: template.ghi_chu_mau
+    })
+    
+    setShowTemplateSelector(false)
+    setIsCreateDialogOpen(true)
+  }
+
+  // Bulk operations handlers
+  const handleBulkAction = async (action: string, data?: any) => {
+    switch (action) {
+      case 'delete':
+        await fetchSubDocuments()
+        break
+      case 'edit':
+        await fetchSubDocuments()
+        break
+      case 'reorder':
+        if (data?.subDocuments) {
+          const response = await fetch(`/api/documents/${documentId}/sub-documents`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subDocuments: data.subDocuments })
+          })
+          if (response.ok) {
+            await fetchSubDocuments()
+          }
+        }
+        break
+    }
+  }
+
+  // Checkbox handlers
+  const handleSelectDocument = (docId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds([...selectedIds, docId])
+    } else {
+      setSelectedIds(selectedIds.filter(id => id !== docId))
+    }
+  }
+
   // Tạo tài liệu con mới
   const handleCreateSubDocument = async () => {
     try {
@@ -106,7 +169,7 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
       })
 
       if (response.ok) {
-        await fetchSubDocuments() // Tải lại danh sách
+        await fetchSubDocuments()
         setFormData({
           ten_tai_lieu_con: '',
           mo_ta: '',
@@ -166,7 +229,7 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
       })
 
       if (response.ok) {
-        await fetchSubDocuments() // Tải lại danh sách
+        await fetchSubDocuments()
         setIsEditDialogOpen(false)
         setSelectedSubDocument(null)
         addToast({
@@ -206,7 +269,7 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
       })
 
       if (response.ok) {
-        await fetchSubDocuments() // Tải lại danh sách
+        await fetchSubDocuments()
         addToast({
           type: 'success',
           title: 'Thành công!',
@@ -261,78 +324,96 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
                 {loading ? 'Đang tải...' : `${subDocuments.length} tài liệu con`}
               </p>
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Thêm Tài Liệu Con
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Thêm Tài Liệu Con</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="ten_tai_lieu_con">Tên Tài Liệu Con</Label>
-                    <Input
-                      id="ten_tai_lieu_con"
-                      value={formData.ten_tai_lieu_con}
-                      onChange={(e) => setFormData({ ...formData, ten_tai_lieu_con: e.target.value })}
-                      placeholder="Nhập tên tài liệu con"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="mo_ta">Mô Tả</Label>
-                    <Input
-                      id="mo_ta"
-                      value={formData.mo_ta}
-                      onChange={(e) => setFormData({ ...formData, mo_ta: e.target.value })}
-                      placeholder="Nhập mô tả"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="loai_tai_lieu">Loại Tài Liệu</Label>
-                    <Select value={formData.loai_tai_lieu} onValueChange={(value) => setFormData({ ...formData, loai_tai_lieu: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bieu_mau">Biểu Mẫu</SelectItem>
-                        <SelectItem value="huong_dan">Hướng Dẫn</SelectItem>
-                        <SelectItem value="checklist">Checklist</SelectItem>
-                        <SelectItem value="bao_cao">Báo Cáo</SelectItem>
-                        <SelectItem value="tai_lieu_tham_khao">Tài Liệu Tham Khảo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="url_file">URL File</Label>
-                    <Input
-                      id="url_file"
-                      value={formData.url_file}
-                      onChange={(e) => setFormData({ ...formData, url_file: e.target.value })}
-                      placeholder="https://drive.google.com/file/d/..."
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="ghi_chu">Ghi Chú</Label>
-                    <Input
-                      id="ghi_chu"
-                      value={formData.ghi_chu}
-                      onChange={(e) => setFormData({ ...formData, ghi_chu: e.target.value })}
-                      placeholder="Ghi chú bổ sung"
-                    />
-                  </div>
-                  <Button onClick={handleCreateSubDocument} className="w-full">
-                    Tạo Tài Liệu Con
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowTemplateSelector(true)}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Dùng Template
+              </Button>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm Tài Liệu Con
                   </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Thêm Tài Liệu Con</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="ten_tai_lieu_con">Tên Tài Liệu Con</Label>
+                      <Input
+                        id="ten_tai_lieu_con"
+                        value={formData.ten_tai_lieu_con}
+                        onChange={(e) => setFormData({ ...formData, ten_tai_lieu_con: e.target.value })}
+                        placeholder="Nhập tên tài liệu con"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="mo_ta">Mô Tả</Label>
+                      <Input
+                        id="mo_ta"
+                        value={formData.mo_ta}
+                        onChange={(e) => setFormData({ ...formData, mo_ta: e.target.value })}
+                        placeholder="Nhập mô tả"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="loai_tai_lieu">Loại Tài Liệu</Label>
+                      <Select value={formData.loai_tai_lieu} onValueChange={(value) => setFormData({ ...formData, loai_tai_lieu: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bieu_mau">Biểu Mẫu</SelectItem>
+                          <SelectItem value="huong_dan">Hướng Dẫn</SelectItem>
+                          <SelectItem value="checklist">Checklist</SelectItem>
+                          <SelectItem value="bao_cao">Báo Cáo</SelectItem>
+                          <SelectItem value="tai_lieu_tham_khao">Tài Liệu Tham Khảo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="url_file">URL File</Label>
+                      <Input
+                        id="url_file"
+                        value={formData.url_file}
+                        onChange={(e) => setFormData({ ...formData, url_file: e.target.value })}
+                        placeholder="https://drive.google.com/file/d/..."
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="ghi_chu">Ghi Chú</Label>
+                      <Input
+                        id="ghi_chu"
+                        value={formData.ghi_chu}
+                        onChange={(e) => setFormData({ ...formData, ghi_chu: e.target.value })}
+                        placeholder="Ghi chú bổ sung"
+                      />
+                    </div>
+                    <Button onClick={handleCreateSubDocument} className="w-full">
+                      Tạo Tài Liệu Con
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Bulk Operations */}
+          <BulkOperations
+            subDocuments={subDocuments}
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
+            onBulkAction={handleBulkAction}
+            documentId={documentId}
+          />
+          
           {loading ? (
             <div className="flex justify-center items-center py-8">
               <span>Đang tải danh sách tài liệu con...</span>
@@ -342,16 +423,35 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
               <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có tài liệu con</h3>
               <p className="text-gray-600 mb-4">Thêm biểu mẫu, hướng dẫn hoặc tài liệu liên quan.</p>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm Tài Liệu Con Đầu Tiên
-              </Button>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={() => setShowTemplateSelector(true)} variant="outline">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Dùng Template
+                </Button>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Thêm Tài Liệu Con Đầu Tiên
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.length === subDocuments.length && subDocuments.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds(subDocuments.map(doc => doc.id))
+                          } else {
+                            setSelectedIds([])
+                          }
+                        }}
+                      />
+                    </TableHead>
                     <TableHead className="w-12">STT</TableHead>
                     <TableHead>Tên Tài Liệu Con</TableHead>
                     <TableHead>Loại</TableHead>
@@ -363,7 +463,14 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
                 </TableHeader>
                 <TableBody>
                   {subDocuments.map((subDoc, index) => (
-                    <TableRow key={subDoc.id}>
+                    <TableRow key={subDoc.id} className={selectedIds.includes(subDoc.id) ? 'bg-blue-50' : ''}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(subDoc.id)}
+                          onChange={(e) => handleSelectDocument(subDoc.id, e.target.checked)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
@@ -532,6 +639,20 @@ export default function SubDocumentManager({ documentId, documentName }: SubDocu
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Template Selector Dialog */}
+      <Dialog open={showTemplateSelector} onOpenChange={setShowTemplateSelector}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Chọn Template Tài Liệu Con</DialogTitle>
+          </DialogHeader>
+          <TemplateSelector
+            selectedType={formData.loai_tai_lieu}
+            onSelectTemplate={handleTemplateSelect}
+            onClose={() => setShowTemplateSelector(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
