@@ -234,6 +234,23 @@ export default function DocumentManager() {
     return phienBanList.filter(version => version.tai_lieu_id === taiLieuId)
   }
 
+  const getLoaiTaiLieuName = (maLoai: string) => {
+    // Tìm trong categories trước
+    const loaiFromCategories = categories.loai_tai_lieu.find(loai => loai.ma_loai === maLoai)
+    if (loaiFromCategories) {
+      return loaiFromCategories.ten_loai
+    }
+    
+    // Fallback mapping nếu không tìm thấy trong categories
+    const loaiMapping: Record<string, string> = {
+      'quy_trinh': 'Quy Trình',
+      'huong_dan': 'Hướng Dẫn', 
+      'tai_lieu_ky_thuat': 'Tài Liệu Kỹ Thuật',
+      'bieu_mau': 'Biểu Mẫu'
+    }
+    return loaiMapping[maLoai] || maLoai
+  }
+
   return (
     <div className="space-y-6">
       {/* Header với nút tạo mới */}
@@ -346,7 +363,7 @@ export default function DocumentManager() {
               {taiLieuList.map((taiLieu) => (
                 <TableRow key={taiLieu.id}>
                   <TableCell className="font-medium">{taiLieu.ten_tai_lieu}</TableCell>
-                  <TableCell>{taiLieu.loai_tai_lieu}</TableCell>
+                  <TableCell>{getLoaiTaiLieuName(taiLieu.loai_tai_lieu)}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       taiLieu.trang_thai === 'hieu_luc' 
