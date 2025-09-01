@@ -80,7 +80,11 @@ export async function PUT(
       body.nguoi_cap_nhat || 'Hệ thống', // nguoi_cap_nhat
       currentDate, // ngay_cap_nhat
       currentRow[9], // phien_ban_hien_tai - giữ nguyên
-      body.tieu_chuan_ap_dung || currentRow[10],
+      body.tieu_chuan_ap_dung 
+        ? (Array.isArray(body.tieu_chuan_ap_dung) 
+            ? body.tieu_chuan_ap_dung.join('; ') 
+            : body.tieu_chuan_ap_dung)
+        : currentRow[10],
       body.url_file || currentRow[11] || '' // url_file
     ]
 

@@ -53,7 +53,9 @@ export async function POST(request: NextRequest) {
       body.nguoi_tao || 'Hệ thống',
       currentDate,
       '1.0', // phiên bản đầu tiên
-      body.tieu_chuan_ap_dung,
+      Array.isArray(body.tieu_chuan_ap_dung) 
+        ? body.tieu_chuan_ap_dung.join('; ') 
+        : body.tieu_chuan_ap_dung,
       body.url_file || '' // URL file
     ]
 

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { Plus, Edit, History, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 
@@ -21,7 +22,7 @@ interface TaiLieu {
   nguoi_tao: string
   ngay_tao: string
   phien_ban_hien_tai: string
-  tieu_chuan_ap_dung: string
+  tieu_chuan_ap_dung: string | string[] // Hỗ trợ cả string và array
   url_file?: string
 }
 
@@ -53,7 +54,7 @@ export default function DocumentManager() {
     ten_tai_lieu: '',
     mo_ta: '',
     loai_tai_lieu: 'tai_lieu_ky_thuat',
-    tieu_chuan_ap_dung: 'ISO 9001:2015',
+    tieu_chuan_ap_dung: [] as string[],
     url_file: ''
   })
 
@@ -61,7 +62,7 @@ export default function DocumentManager() {
     ten_tai_lieu: '',
     mo_ta: '',
     loai_tai_lieu: '',
-    tieu_chuan_ap_dung: '',
+    tieu_chuan_ap_dung: [] as string[],
     url_file: ''
   })
 
@@ -138,7 +139,7 @@ export default function DocumentManager() {
       nguoi_tao: 'Nguyễn Văn A',
       ngay_tao: '2024-01-15',
       phien_ban_hien_tai: '2.1',
-      tieu_chuan_ap_dung: 'ISO 9001:2015',
+      tieu_chuan_ap_dung: 'ISO 9001:2015; ISO 14001:2015',
       url_file: 'https://drive.google.com/file/d/1abc123/view'
     },
     {
@@ -150,7 +151,7 @@ export default function DocumentManager() {
       nguoi_tao: 'Trần Thị B',
       ngay_tao: '2024-02-01',
       phien_ban_hien_tai: '1.0',
-      tieu_chuan_ap_dung: 'Nội bộ',
+      tieu_chuan_ap_dung: 'Nội bộ; ISO 45001:2018',
       url_file: ''
     }
   ]
@@ -210,7 +211,7 @@ export default function DocumentManager() {
           ten_tai_lieu: '',
           mo_ta: '',
           loai_tai_lieu: 'tai_lieu_ky_thuat',
-          tieu_chuan_ap_dung: 'ISO 9001:2015',
+          tieu_chuan_ap_dung: [],
           url_file: ''
         })
         setIsCreateDialogOpen(false)
@@ -306,11 +307,24 @@ export default function DocumentManager() {
 
   const handleEditDocument = (taiLieu: TaiLieu) => {
     setSelectedTaiLieu(taiLieu)
+    
+    // Xử lý tiêu chuẩn - có thể là string hoặc array
+    let tieuChuanArray: string[] = []
+    if (typeof taiLieu.tieu_chuan_ap_dung === 'string') {
+      // Nếu là string, tách bằng dấu phẩy hoặc semicolon
+      tieuChuanArray = taiLieu.tieu_chuan_ap_dung
+        .split(/[,;]/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+    } else if (Array.isArray(taiLieu.tieu_chuan_ap_dung)) {
+      tieuChuanArray = taiLieu.tieu_chuan_ap_dung
+    }
+    
     setEditFormData({
       ten_tai_lieu: taiLieu.ten_tai_lieu,
       mo_ta: taiLieu.mo_ta,
       loai_tai_lieu: taiLieu.loai_tai_lieu,
-      tieu_chuan_ap_dung: taiLieu.tieu_chuan_ap_dung,
+      tieu_chuan_ap_dung: tieuChuanArray,
       url_file: taiLieu.url_file || ''
     })
     setIsEditDialogOpen(true)
@@ -460,26 +474,25 @@ export default function DocumentManager() {
               </div>
               <div>
                 <Label htmlFor="tieu_chuan_ap_dung">Tiêu Chuẩn Áp Dụng</Label>
-                <Select value={formData.tieu_chuan_ap_dung} onValueChange={(value) => setFormData({ ...formData, tieu_chuan_ap_dung: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn tiêu chuẩn" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.tieu_chuan.length > 0 ? (
-                      categories.tieu_chuan.filter(tc => tc.ten_tieu_chuan && tc.ten_tieu_chuan.trim() !== '').map((tc) => (
-                        <SelectItem key={tc.id} value={tc.ten_tieu_chuan}>
-                          {tc.ten_tieu_chuan}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <>
-                        <SelectItem value="ISO 9001:2015">ISO 9001:2015</SelectItem>
-                        <SelectItem value="ISO 14001:2015">ISO 14001:2015</SelectItem>
-                        <SelectItem value="Nội bộ">Nội bộ</SelectItem>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  options={categories.tieu_chuan.length > 0 
+                    ? categories.tieu_chuan
+                        .filter(tc => tc.ten_tieu_chuan && tc.ten_tieu_chuan.trim() !== '')
+                        .map(tc => ({
+                          value: tc.ten_tieu_chuan,
+                          label: tc.ten_tieu_chuan
+                        }))
+                    : [
+                        { value: "ISO 9001:2015", label: "ISO 9001:2015" },
+                        { value: "ISO 14001:2015", label: "ISO 14001:2015" },
+                        { value: "ISO 45001:2018", label: "ISO 45001:2018" },
+                        { value: "Nội bộ", label: "Nội bộ" }
+                      ]
+                  }
+                  selected={formData.tieu_chuan_ap_dung}
+                  onChange={(selected) => setFormData({...formData, tieu_chuan_ap_dung: selected})}
+                  placeholder="Chọn tiêu chuẩn áp dụng..."
+                />
               </div>
               <div>
                 <Label htmlFor="url_file">URL File Tài Liệu</Label>
@@ -531,7 +544,14 @@ export default function DocumentManager() {
                     </span>
                   </TableCell>
                   <TableCell>{taiLieu.phien_ban_hien_tai}</TableCell>
-                  <TableCell>{taiLieu.tieu_chuan_ap_dung}</TableCell>
+                  <TableCell>
+                    {typeof taiLieu.tieu_chuan_ap_dung === 'string' 
+                      ? taiLieu.tieu_chuan_ap_dung
+                      : Array.isArray(taiLieu.tieu_chuan_ap_dung)
+                        ? taiLieu.tieu_chuan_ap_dung.join(', ')
+                        : taiLieu.tieu_chuan_ap_dung
+                    }
+                  </TableCell>
                   <TableCell>
                     {taiLieu.url_file ? (
                       <a
@@ -648,26 +668,25 @@ export default function DocumentManager() {
             </div>
             <div>
               <Label htmlFor="edit_tieu_chuan_ap_dung">Tiêu Chuẩn Áp Dụng</Label>
-              <Select value={editFormData.tieu_chuan_ap_dung} onValueChange={(value) => setEditFormData({ ...editFormData, tieu_chuan_ap_dung: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn tiêu chuẩn" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.tieu_chuan.length > 0 ? (
-                    categories.tieu_chuan.filter(tc => tc.ten_tieu_chuan && tc.ten_tieu_chuan.trim() !== '').map((tc) => (
-                      <SelectItem key={tc.id} value={tc.ten_tieu_chuan}>
-                        {tc.ten_tieu_chuan}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <>
-                      <SelectItem value="ISO 9001:2015">ISO 9001:2015</SelectItem>
-                      <SelectItem value="ISO 14001:2015">ISO 14001:2015</SelectItem>
-                      <SelectItem value="Nội bộ">Nội bộ</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={categories.tieu_chuan.length > 0 
+                  ? categories.tieu_chuan
+                      .filter(tc => tc.ten_tieu_chuan && tc.ten_tieu_chuan.trim() !== '')
+                      .map(tc => ({
+                        value: tc.ten_tieu_chuan,
+                        label: tc.ten_tieu_chuan
+                      }))
+                  : [
+                      { value: "ISO 9001:2015", label: "ISO 9001:2015" },
+                      { value: "ISO 14001:2015", label: "ISO 14001:2015" },
+                      { value: "ISO 45001:2018", label: "ISO 45001:2018" },
+                      { value: "Nội bộ", label: "Nội bộ" }
+                    ]
+                }
+                selected={editFormData.tieu_chuan_ap_dung}
+                onChange={(selected) => setEditFormData({...editFormData, tieu_chuan_ap_dung: selected})}
+                placeholder="Chọn tiêu chuẩn áp dụng..."
+              />
             </div>
             <div>
               <Label htmlFor="edit_url_file">URL File Tài Liệu</Label>
