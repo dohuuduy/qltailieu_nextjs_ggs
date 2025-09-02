@@ -32,7 +32,13 @@ export const COLUMNS = {
   TAI_LIEU: [
     'id', 'ten_tai_lieu', 'mo_ta', 'loai_tai_lieu', 'trang_thai',
     'nguoi_tao', 'ngay_tao', 'nguoi_cap_nhat', 'ngay_cap_nhat',
-    'phien_ban_hien_tai', 'tieu_chuan_ap_dung', 'url_file'
+    'phien_ban_hien_tai', 'tieu_chuan_ap_dung', 'url_file',
+    // Lifecycle fields
+    'ngay_ban_hanh', 'ngay_bat_dau_hieu_luc', 'ngay_ket_thuc_hieu_luc',
+    'chu_ky_soat_xet', 'ngay_soat_xet_gan_nhat', 'ngay_soat_xet_tiep_theo',
+    'nguoi_soan_thao', 'nguoi_phe_duyet', 'ngay_phe_duyet', 'trang_thai_phe_duyet',
+    'phong_ban_chu_quan', 'phong_ban_lien_quan', 'cap_do_tai_lieu',
+    'ly_do_thay_doi', 'ghi_chu_phe_duyet'
   ],
   TAI_LIEU_CON: [
     'id', 'tai_lieu_cha_id', 'ten_tai_lieu_con', 'mo_ta', 'loai_tai_lieu',

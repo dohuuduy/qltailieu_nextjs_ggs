@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,10 +9,7 @@ import {
   Clock, 
   AlertTriangle, 
   CheckCircle, 
-  FileText, 
-  Users,
-  TrendingUp,
-  Filter
+  FileText
 } from 'lucide-react'
 import { DocumentLifecycle, getDocumentStatusName, isDocumentExpiringSoon, isReviewDue } from '@/lib/types/document-lifecycle'
 
