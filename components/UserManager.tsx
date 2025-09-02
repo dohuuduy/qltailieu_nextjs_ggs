@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Plus, Edit, Users, Shield, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Edit, Users, Shield, Loader2 } from 'lucide-react'
 
 interface User {
   id: string
@@ -130,12 +130,18 @@ export default function UserManager() {
       setSubmitting(true)
       setError('')
 
+      const isEditing = editingUser !== null
+      const method = isEditing ? 'PUT' : 'POST'
+      const requestBody = isEditing 
+        ? { ...userForm, id: editingUser.id }
+        : userForm
+
       const response = await fetch('/api/users', {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userForm),
+        body: JSON.stringify(requestBody),
       })
 
       const data = await response.json()
@@ -145,7 +151,7 @@ export default function UserManager() {
         setIsCreateUserOpen(false)
         resetUserForm()
       } else {
-        setError(data.error || 'Không thể tạo người dùng')
+        setError(data.error || (isEditing ? 'Không thể cập nhật người dùng' : 'Không thể tạo người dùng'))
       }
     } catch (error) {
       setError('Lỗi kết nối')
@@ -159,12 +165,18 @@ export default function UserManager() {
       setSubmitting(true)
       setError('')
 
+      const isEditing = editingDept !== null
+      const method = isEditing ? 'PUT' : 'POST'
+      const requestBody = isEditing 
+        ? { ...deptForm, id: editingDept.id }
+        : deptForm
+
       const response = await fetch('/api/departments', {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(deptForm),
+        body: JSON.stringify(requestBody),
       })
 
       const data = await response.json()
@@ -174,7 +186,7 @@ export default function UserManager() {
         setIsCreateDeptOpen(false)
         resetDeptForm()
       } else {
-        setError(data.error || 'Không thể tạo phòng ban')
+        setError(data.error || (isEditing ? 'Không thể cập nhật phòng ban' : 'Không thể tạo phòng ban'))
       }
     } catch (error) {
       setError('Lỗi kết nối')
@@ -237,6 +249,81 @@ export default function UserManager() {
     setIsCreateDeptOpen(true)
   }
 
+  const handleToggleDeptStatus = async (dept: Department) => {
+    try {
+      setSubmitting(true)
+      setError('')
+
+      const newStatus = dept.trang_thai === 'active' ? 'inactive' : 'active'
+      
+      const response = await fetch('/api/departments', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: dept.id,
+          ten_phong_ban: dept.ten_phong_ban,
+          ma_phong_ban: dept.ma_phong_ban,
+          truong_phong: dept.truong_phong,
+          pho_phong: dept.pho_phong,
+          mo_ta: dept.mo_ta || '',
+          trang_thai: newStatus
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        await fetchData() // Refresh data
+      } else {
+        setError(data.error || 'Không thể cập nhật trạng thái phòng ban')
+      }
+    } catch (error) {
+      setError('Lỗi kết nối')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleToggleUserStatus = async (user: User) => {
+    try {
+      setSubmitting(true)
+      setError('')
+
+      const newStatus = user.trang_thai === 'active' ? 'inactive' : 'active'
+      
+      const response = await fetch('/api/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: user.id,
+          ho_ten: user.ho_ten,
+          email: user.email,
+          ten_dang_nhap: user.ten_dang_nhap,
+          chuc_vu: user.chuc_vu,
+          phong_ban: user.phong_ban,
+          quyen_phe_duyet: user.quyen_phe_duyet,
+          trang_thai: newStatus
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        await fetchData() // Refresh data
+      } else {
+        setError(data.error || 'Không thể cập nhật trạng thái người dùng')
+      }
+    } catch (error) {
+      setError('Lỗi kết nối')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const getPermissionBadgeColor = (permissions: string[]) => {
     if (permissions.includes('A')) return 'bg-red-100 text-red-800'
     if (permissions.includes('B')) return 'bg-orange-100 text-orange-800'
@@ -284,7 +371,7 @@ export default function UserManager() {
                 Thêm phòng ban
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>
                   {editingDept ? 'Sửa phòng ban' : 'Thêm phòng ban mới'}
@@ -326,6 +413,22 @@ export default function UserManager() {
                     onChange={(e) => setDeptForm({...deptForm, truong_phong: e.target.value})}
                     placeholder="Nhập tên trưởng phòng"
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="pho_phong">Phó phòng</Label>
+                  <Input
+                    id="pho_phong"
+                    value={Array.isArray(deptForm.pho_phong) ? deptForm.pho_phong.join(', ') : deptForm.pho_phong}
+                    onChange={(e) => {
+                      const phoPhongList = e.target.value.split(',').map(name => name.trim()).filter(name => name.length > 0);
+                      setDeptForm({...deptForm, pho_phong: phoPhongList});
+                    }}
+                    placeholder="Nhập tên phó phòng (phân cách bằng dấu phẩy nếu có nhiều người)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Có thể nhập nhiều phó phòng, phân cách bằng dấu phẩy. Ví dụ: Nguyễn Văn A, Trần Thị B
+                  </p>
                 </div>
 
                 <div>
@@ -623,6 +726,14 @@ export default function UserManager() {
                           <Button variant="outline" size="sm" onClick={() => openEditUser(user)}>
                             <Edit className="w-4 h-4" />
                           </Button>
+                          <Button 
+                            variant={user.trang_thai === 'active' ? 'destructive' : 'default'} 
+                            size="sm" 
+                            onClick={() => handleToggleUserStatus(user)}
+                            disabled={submitting}
+                          >
+                            {user.trang_thai === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -670,6 +781,14 @@ export default function UserManager() {
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => openEditDept(dept)}>
                           <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant={dept.trang_thai === 'active' ? 'destructive' : 'default'} 
+                          size="sm" 
+                          onClick={() => handleToggleDeptStatus(dept)}
+                          disabled={submitting}
+                        >
+                          {dept.trang_thai === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt'}
                         </Button>
                       </div>
                     </TableCell>
