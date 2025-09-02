@@ -1,17 +1,67 @@
-'use client'
+"use client"
 
-import * as React from 'react'
-import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from "react"
+import { X } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export interface ToastProps {
-  id: string
-  title?: string
+  id?: string
+  type: 'success' | 'error' | 'warning' | 'info'
+  title: string
   description?: string
-  type?: 'success' | 'error' | 'warning' | 'info'
   duration?: number
+  onClose?: () => void
 }
 
+const Toast = React.forwardRef<HTMLDivElement, ToastProps>(
+  ({ type, title, description, onClose, ...props }, ref) => {
+    const getToastStyles = () => {
+      switch (type) {
+        case 'success':
+          return 'bg-green-50 border-green-200 text-green-800'
+        case 'error':
+          return 'bg-red-50 border-red-200 text-red-800'
+        case 'warning':
+          return 'bg-yellow-50 border-yellow-200 text-yellow-800'
+        case 'info':
+          return 'bg-blue-50 border-blue-200 text-blue-800'
+        default:
+          return 'bg-gray-50 border-gray-200 text-gray-800'
+      }
+    }
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "relative w-full rounded-lg border p-4 shadow-lg",
+          getToastStyles()
+        )}
+        {...props}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h4 className="font-semibold">{title}</h4>
+            {description && (
+              <p className="mt-1 text-sm opacity-90">{description}</p>
+            )}
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="ml-4 inline-flex h-5 w-5 items-center justify-center rounded-md opacity-70 hover:opacity-100"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+)
+Toast.displayName = "Toast"
+
+// Toast Context and Hook
 interface ToastContextType {
   toasts: ToastProps[]
   addToast: (toast: Omit<ToastProps, 'id'>) => void
@@ -27,22 +77,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const id = Math.random().toString(36).substr(2, 9)
     const newToast = { ...toast, id }
     
-    setToasts((prev) => [...prev, newToast])
-
+    setToasts(prev => [...prev, newToast])
+    
     // Auto remove after duration
+    const duration = toast.duration || 5000
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id))
-    }, toast.duration || 5000)
+      setToasts(prev => prev.filter(t => t.id !== id))
+    }, duration)
   }, [])
 
   const removeToast = React.useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
+    setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </ToastContext.Provider>
   )
 }
@@ -57,64 +108,22 @@ export function useToast() {
 
 function ToastContainer({ 
   toasts, 
-  removeToast 
+  onRemove 
 }: { 
   toasts: ToastProps[]
-  removeToast: (id: string) => void 
+  onRemove: (id: string) => void 
 }) {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
-      {toasts.map((toast) => (
-        <Toast key={toast.id} {...toast} onClose={() => removeToast(toast.id)} />
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 w-96">
+      {toasts.map(toast => (
+        <Toast
+          key={toast.id}
+          {...toast}
+          onClose={() => toast.id && onRemove(toast.id)}
+        />
       ))}
     </div>
   )
 }
 
-function Toast({ 
-  title, 
-  description, 
-  type = 'info', 
-  onClose 
-}: ToastProps & { onClose: () => void }) {
-  const typeStyles = {
-    success: 'bg-green-50 border-green-200 text-green-800',
-    error: 'bg-red-50 border-red-200 text-red-800',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800'
-  }
-
-  const iconStyles = {
-    success: '🟢',
-    error: '🔴', 
-    warning: '🟡',
-    info: '🔵'
-  }
-
-  return (
-    <div className={cn(
-      'min-w-80 max-w-md p-4 border rounded-lg shadow-lg animate-in slide-in-from-right-full',
-      typeStyles[type]
-    )}>
-      <div className="flex items-start justify-between">
-        <div className="flex items-start space-x-2">
-          <span className="text-sm">{iconStyles[type]}</span>
-          <div className="flex-1">
-            {title && (
-              <div className="font-medium text-sm">{title}</div>
-            )}
-            {description && (
-              <div className="text-sm opacity-90 mt-1">{description}</div>
-            )}
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="ml-2 opacity-60 hover:opacity-100 transition-opacity"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  )
-}
+export { Toast }

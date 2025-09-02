@@ -11,8 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { MultiSelect } from '@/components/ui/multi-select'
 import SubDocumentManager from '@/components/SubDocumentManager'
-import { Plus, Edit, History, Trash2, FileText } from 'lucide-react'
+import { Plus, Edit, History, Trash2, FileText, Calendar, Clock } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import DocumentLifecycleForm from './DocumentLifecycleFormNew'
+import DocumentLifecycleDashboard from './DocumentLifecycleDashboard'
+import { DocumentLifecycle } from '@/lib/types/document-lifecycle'
 
 interface TaiLieu {
   id: string
@@ -48,6 +52,10 @@ export default function DocumentManager() {
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false)
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isLifecycleDialogOpen, setIsLifecycleDialogOpen] = useState(false)
+  const [lifecycleMode, setLifecycleMode] = useState<'create' | 'edit'>('create')
+  const [selectedLifecycleDoc, setSelectedLifecycleDoc] = useState<Partial<DocumentLifecycle> | null>(null)
+  const [activeTab, setActiveTab] = useState('documents')
   const [isSubDocumentDialogOpen, setIsSubDocumentDialogOpen] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<TaiLieu | null>(null)
 
@@ -410,16 +418,77 @@ export default function DocumentManager() {
     }
   }
 
+  // Lifecycle management functions
+  const handleCreateLifecycleDocument = () => {
+    setSelectedLifecycleDoc(null)
+    setLifecycleMode('create')
+    setIsLifecycleDialogOpen(true)
+  }
+
+  const handleEditLifecycleDocument = (document: DocumentLifecycle) => {
+    setSelectedLifecycleDoc(document)
+    setLifecycleMode('edit')
+    setIsLifecycleDialogOpen(true)
+  }
+
+  const handleSaveLifecycleDocument = async (data: Partial<DocumentLifecycle>) => {
+    try {
+      const url = lifecycleMode === 'create' 
+        ? '/api/documents/lifecycle'
+        : `/api/documents/lifecycle/${selectedLifecycleDoc?.id}`
+      
+      const method = lifecycleMode === 'create' ? 'POST' : 'PUT'
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+
+      if (response.ok) {
+        setIsLifecycleDialogOpen(false)
+        // Refresh data if needed
+      }
+    } catch (error) {
+      console.error('Error saving lifecycle document:', error)
+      throw error
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header với nút tạo mới */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Danh Sách Tài Liệu</h2>
+          <h2 className="text-2xl font-bold">Quản lý Tài Liệu</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Hiển thị {taiLieuList.length} tài liệu đang hoạt động
+            Quản lý tài liệu và vòng đời tài liệu
           </p>
         </div>
+      </div>
+
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="documents" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Danh sách tài liệu
+          </TabsTrigger>
+          <TabsTrigger value="lifecycle" className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Vòng đời tài liệu
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="documents" className="space-y-6">
+          {/* Original Document Management Content */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-xl font-semibold">Danh Sách Tài Liệu</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Hiển thị {taiLieuList.length} tài liệu đang hoạt động
+              </p>
+            </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -863,6 +932,38 @@ export default function DocumentManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </TabsContent>
+
+        <TabsContent value="lifecycle" className="space-y-6">
+          <DocumentLifecycleDashboard
+            onCreateDocument={handleCreateLifecycleDocument}
+            onEditDocument={handleEditLifecycleDocument}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Lifecycle Document Dialog */}
+      <Dialog open={isLifecycleDialogOpen} onOpenChange={setIsLifecycleDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {lifecycleMode === 'create' ? 'Tạo tài liệu mới' : 'Chỉnh sửa tài liệu'}
+            </DialogTitle>
+          </DialogHeader>
+          <DocumentLifecycleForm
+            document={selectedLifecycleDoc || undefined}
+            onSave={handleSaveLifecycleDocument}
+            onCancel={() => setIsLifecycleDialogOpen(false)}
+            mode={lifecycleMode}
+            currentUser={{
+              id: '1',
+              ho_ten: 'Người dùng hiện tại',
+              phong_ban: 'IT',
+              quyen_phe_duyet: ['C']
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

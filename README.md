@@ -73,6 +73,7 @@
 
 ## Cài Đặt
 
+### Development
 1. Clone repository:
 ```bash
 git clone <repository-url>
@@ -90,10 +91,32 @@ npm install
    - Tạo Google Spreadsheet và chia sẻ với service account email
    - Copy file `.env.example` thành `.env.local` và điền thông tin
 
-4. Chạy ứng dụng:
+4. Setup dữ liệu:
+```bash
+# Tạo cấu trúc sheets
+node scripts/setup-user-department-sheets.js
+
+# Thêm dữ liệu mẫu
+node scripts/add-users-departments-data.js
+```
+
+5. Chạy ứng dụng:
 ```bash
 npm run dev
 ```
+
+### Production (Vercel)
+1. Push code lên GitHub
+2. Import project vào Vercel
+3. Cấu hình Environment Variables
+4. Deploy tự động
+
+**Chi tiết deployment:** [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+
+### Tài khoản test:
+- **Admin:** duy / a123
+- **User:** tranthib / password123
+- **Manager:** levanc / password123
 
 ## Cấu Hình Google Sheets
 

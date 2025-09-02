@@ -7,8 +7,11 @@ import DocumentManager from '@/components/DocumentManager'
 import VersionManager from '@/components/VersionManager'
 import HistoryViewer from '@/components/HistoryViewer'
 import CategoryManager from '@/components/CategoryManager'
+import ApprovalTest from '@/components/ApprovalTest'
+import UserManager from '@/components/UserManager'
+import { withAuth } from '@/lib/auth-context'
 
-export default function Home() {
+function Home() {
   const [currentPage, setCurrentPage] = useState('dashboard')
 
   const renderPage = () => {
@@ -24,6 +27,10 @@ export default function Home() {
       case 'standards':
         return <CategoryManager />
       case 'users':
+        return <UserManager />
+      case 'approval-test':
+        return <ApprovalTest />
+      case 'old-users':
         return (
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold mb-4">Quản Lý Người Dùng</h2>
@@ -55,3 +62,4 @@ export default function Home() {
     </Layout>
   )
 }
+export default withAuth(Home);
